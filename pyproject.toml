@@ -5,6 +5,7 @@ description = "A project to convert shapes to solids."
 authors = [{ name = "Your Name", email = "you@example.com" }]
 dependencies = [
     "crewai>=1.9.3",
+    "litellm>=1.75.3",
     "mcp-server-git>=2026.1.14",
     "python-dotenv>=1.1.1",
 ]
