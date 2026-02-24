@@ -117,7 +117,7 @@ Solid Object files: {$REPO_OBJECT_PATH}/src/solid/Meeting.ts and {$REPO_OBJECT_P
 3- Shape file {$REPO_SHAPES_PATH}/shapes/Organization/organizationShape.ttl
 Solid Object files: {$REPO_OBJECT_PATH}/src/solid/Organization.ts and {$REPO_OBJECT_PATH}/src/solid/OrganizationDataset.ts
 
-4- Shape file {$REPO_SHAPES_PATH}/shapes/Person/personShape.ttl and {$REPO_SHAPES_PATH}/shapes/Person/personNameShape.ttl
+4- Shape file {$REPO_SHAPES_PATH}/shapes/Person/personShape.ttl and {$REPO_SHAPES_PATH}/shapes/Person/personalNameShape.ttl
 Solid Object files: {$REPO_OBJECT_PATH}/src/solid/Person.ts and {$REPO_OBJECT_PATH}/src/solid/PersonDataset.ts
 
 5- Shape file {$REPO_SHAPES_PATH}/shapes/PersonalProfile/personalProfileShape.ttl

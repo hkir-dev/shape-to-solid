@@ -3,41 +3,43 @@ import os
 from dotenv import load_dotenv
 
 from crewai import Agent, Task, Crew, Process, LLM
-from crewai.mcp import MCPServerStdio
+from crewai_tools import FileReadTool, DirectoryReadTool
 
 load_dotenv()
 
 llm_architect = LLM(
-    # model=os.getenv("MODEL_NAME_ARCHITECT"),
     model="gpt-4o",
     api_key=os.getenv("GITHUB_COPILOT_TOKEN"),
     base_url="https://models.github.ai/inference",
-    temperature=1,  # o1-preview requires temperature=1
+    temperature=1,
     max_tokens=8000
 )
 
+llm_architect_gpt = LLM(
+    model="gpt-4o",
+    temperature=1
+)
+
+CURRENT_DIR = os.path.dirname(__file__)
+PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, '../../'))
 
 def main():
-    # Setup MCP tools for filesystem access
-    # Allow read access to blueprints and the example repositories
-    file_mcp = MCPServerStdio(
-        command="npx",
-        args=[
-            "-y",
-            "@modelcontextprotocol/server-filesystem",
-            os.getenv("REPO_SHAPES_PATH", "./blueprints"),
-            os.getenv("REPO_OBJECT_PATH", "./blueprints"),
-            "./blueprints"
-        ]
-    )
+    # Setup file tools for reading blueprints and example files
+    shapes_path = os.getenv("REPO_SHAPES_PATH")
+    objects_path = os.getenv("REPO_OBJECT_PATH")
+
+    # File reading tools for different directories
+    file_read_tool = FileReadTool()
+    dir_read_tool = DirectoryReadTool()
 
     # Define the System Architect Agent with detailed role and backstory
     architect = Agent(
         role='Senior SHACL-to-TypeScript System Architect',
         goal=(
-            'Read and deeply analyze the blueprints/rules.md file and all referenced example files '
+            'Current project folder is ' + str(PROJECT_ROOT) + '. '
+            'Read and deeply analyze the ' + str(PROJECT_ROOT) + '/blueprints/rules.md file and all referenced example files '
             '(SHACL shapes and corresponding TypeScript Solid Object implementations). '
-            'Produce a comprehensive, self-contained guidance document (agent_work/architect.md) '
+            'Produce a comprehensive, self-contained guidance document (' + str(PROJECT_ROOT) + '/agent_work/architect.md) '
             'that serves as the sole source of truth for the Developer Agent to implement '
             'SHACL Shape to TypeScript Solid Object conversions.'
         ),
@@ -64,15 +66,15 @@ You are meticulous about:
 
 Your mission is to create documentation so clear and comprehensive that a developer can implement 
 any SHACL-to-TypeScript conversion without needing to ask clarifying questions.''',
-        mcps=[file_mcp],
-        llm=llm_architect,
+        tools=[file_read_tool, dir_read_tool],
+        llm=llm_architect_gpt,
         verbose=True,
         allow_delegation=False
     )
 
     # Single focused task: Generate the architect guidance document
     architect_guide_task = Task(
-        description='''Your task is to create a comprehensive guidance document for SHACL to Solid Object conversion.
+        description=f'''Your task is to create a comprehensive guidance document for SHACL to Solid Object conversion.
 
 **Step 1: Read the Rules**
 Read and analyze the file `blueprints/rules.md` thoroughly. Understand:
@@ -85,29 +87,26 @@ Read and analyze the file `blueprints/rules.md` thoroughly. Understand:
 The rules.md file references these example pairs. You MUST read and analyze EACH of them:
 
 1. Group Shape: 
-   - Shape: {REPO_SHAPES_PATH}/shapes/Group/groupShape.ttl
-   - TypeScript: {REPO_OBJECT_PATH}/src/solid/Group.ts and GroupDataset.ts
+   - Shape: {shapes_path}/shapes/Group/groupShape.ttl
+   - TypeScript: {objects_path}/src/solid/Group.ts and {objects_path}/src/solid/GroupDataset.ts
 
 2. Meeting Shape:
-   - Shape: {REPO_SHAPES_PATH}/shapes/Meeting/meetingShape.ttl
-   - TypeScript: {REPO_OBJECT_PATH}/src/solid/Meeting.ts and MeetingDataset.ts
+   - Shape: {shapes_path}/shapes/Meeting/meetingShape.ttl
+   - TypeScript: {objects_path}/src/solid/Meeting.ts and {objects_path}/src/solid/MeetingDataset.ts
 
 3. Organization Shape:
-   - Shape: {REPO_SHAPES_PATH}/shapes/Organization/organizationShape.ttl
-   - TypeScript: {REPO_OBJECT_PATH}/src/solid/Organization.ts and OrganizationDataset.ts
+   - Shape: {shapes_path}/shapes/Organization/organizationShape.ttl
+   - TypeScript: {objects_path}/src/solid/Organization.ts and {objects_path}/src/solid/OrganizationDataset.ts
 
 4. Person Shape:
-   - Shapes: {REPO_SHAPES_PATH}/shapes/Person/personShape.ttl and personNameShape.ttl
-   - TypeScript: {REPO_OBJECT_PATH}/src/solid/Person.ts and PersonDataset.ts
+   - Shapes: {shapes_path}/shapes/Person/personShape.ttl and {shapes_path}/shapes/Person/personNameShape.ttl
+   - TypeScript: {objects_path}/src/solid/Person.ts and {objects_path}/src/solid/PersonDataset.ts
 
 5. Profile Shape:
-   - Shape: {REPO_SHAPES_PATH}/shapes/PersonalProfile/personalProfileShape.ttl
-   - TypeScript: {REPO_OBJECT_PATH}/src/solid/Profile.ts and ProfileDataset.ts
+   - Shape: {shapes_path}/shapes/PersonalProfile/personalProfileShape.ttl
+   - TypeScript: {objects_path}/src/solid/Profile.ts and {objects_path}/src/solid/ProfileDataset.ts
 
-6. Mod file: {REPO_OBJECT_PATH}/src/solid/mod.ts
-
-Note: Replace {REPO_SHAPES_PATH} with the value from environment variable REPO_SHAPES_PATH 
-and {REPO_OBJECT_PATH} with the value from environment variable REPO_OBJECT_PATH.
+6. Mod file: {objects_path}/src/solid/mod.ts
 
 **Step 3: Generate Comprehensive Guidance Document**
 Create agent_work/architect.md with the following structure:
